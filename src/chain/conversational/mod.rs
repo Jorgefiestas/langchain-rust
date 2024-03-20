@@ -8,11 +8,14 @@ use crate::{
     language_models::{llm::LLM, GenerateResult},
     memory::SimpleMemory,
     prompt::{HumanMessagePromptTemplate, PromptArgs},
+    prompt_args,
     schemas::{memory::BaseMemory, messages::Message},
     template_fstring,
 };
 
 use self::prompt::DEFAULT_TEMPLATE;
+
+const DEFAULT_INPUT_VARIABLE: &str = "input";
 
 use super::{
     chain_trait::Chain,
@@ -21,9 +24,33 @@ use super::{
 
 pub mod builder;
 mod prompt;
+
+pub struct ConversationalChainPromptBuilder {
+    input: String,
+}
+
+impl ConversationalChainPromptBuilder {
+    pub fn new() -> Self {
+        Self {
+            input: "".to_string(),
+        }
+    }
+
+    pub fn input<S: Into<String>>(mut self, input: S) -> Self {
+        self.input = input.into();
+        self
+    }
+
+    pub fn build(self) -> PromptArgs {
+        prompt_args! {
+            DEFAULT_INPUT_VARIABLE => self.input,
+        }
+    }
+}
+
 pub struct ConversationalChain {
     llm: LLMChain,
-    memory: Arc<Mutex<dyn BaseMemory>>,
+    pub memory: Arc<Mutex<dyn BaseMemory>>,
 }
 
 //Conversational Chain is a simple chain to interact with ai as a string of messages
@@ -46,6 +73,10 @@ impl ConversationalChain {
         self.memory = memory;
         self
     }
+
+    pub fn pompt_builder(&self) -> ConversationalChainPromptBuilder {
+        ConversationalChainPromptBuilder::new()
+    }
 }
 
 #[async_trait]
@@ -55,7 +86,9 @@ impl Chain for ConversationalChain {
         let mut input_variables = input_variables;
         input_variables.insert("history".to_string(), memory.to_string().into());
         let result = self.llm.call(input_variables.clone()).await?;
-        memory.add_message(Message::new_ai_message(&input_variables["input"]));
+        memory.add_message(Message::new_ai_message(
+            &input_variables[DEFAULT_INPUT_VARIABLE],
+        ));
         memory.add_message(Message::new_ai_message(&result.generation));
         Ok(result)
     }
@@ -65,7 +98,9 @@ impl Chain for ConversationalChain {
         let mut input_variables = input_variables;
         input_variables.insert("history".to_string(), memory.to_string().into());
         let result = self.llm.invoke(input_variables.clone()).await?;
-        memory.add_message(Message::new_ai_message(&input_variables["input"]));
+        memory.add_message(Message::new_ai_message(
+            &input_variables[DEFAULT_INPUT_VARIABLE],
+        ));
         memory.add_message(Message::new_ai_message(&result));
         Ok(result)
     }
@@ -77,6 +112,9 @@ impl Chain for ConversationalChain {
         Pin<Box<dyn Stream<Item = Result<serde_json::Value, Box<dyn Error + Send>>> + Send>>,
         Box<dyn Error>,
     > {
+        let memory = self.memory.lock().await;
+        let mut input_variables = input_variables;
+        input_variables.insert("history".to_string(), memory.to_string().into());
         self.llm.stream(input_variables).await
     }
 
