@@ -17,6 +17,7 @@ impl TextLoader {
     }
 }
 
+/*
 #[async_trait]
 impl Loader for TextLoader {
     async fn load(mut self) -> Result<Vec<Document>, Box<dyn Error>> {
@@ -51,3 +52,4 @@ mod tests {
         assert_eq!(documents[0].page_content, mocked_file_content); // Ensure the Document contains the mocked content
     }
 }
+*/

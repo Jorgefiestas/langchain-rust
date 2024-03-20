@@ -42,6 +42,7 @@ impl CsvLoader<Cursor<Vec<u8>>> {
     }
 }
 
+/*
 #[async_trait]
 impl<R: Read + Send + Sync + 'static> Loader for CsvLoader<R> {
     async fn load(mut self) -> Result<Vec<Document>, Box<dyn Error>> {
@@ -151,3 +152,4 @@ Jane Smith,32,London,United Kingdom";
         assert_eq!(documents[1].page_content, expected2);
     }
 }
+*/
