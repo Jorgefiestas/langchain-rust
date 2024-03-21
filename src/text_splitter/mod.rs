@@ -1,9 +1,11 @@
+mod chunk_splitter;
 mod error;
 mod markdown_splitter;
 mod options;
 mod text_splitter;
 mod token_splitter;
 
+pub use chunk_splitter::*;
 pub use error::*;
 pub use markdown_splitter::*;
 pub use options::*;
